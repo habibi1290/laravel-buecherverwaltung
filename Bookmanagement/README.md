@@ -1,45 +1,39 @@
 Bücherverwaltung mit Laravel und DDEV
 
-Laravel-Anwendung mit einem Buchbestand in einer Datenbank. Coverbilder und Beschreibungen werden über die Google Books API ergänzt. Ein Export-Button lädt Buchdaten als Excel-Datei herunter.
+Laravel-Anwendung zur Verwaltung eines Buchbestands in einer lokalen Datenbank. Die Google Books API ergänzt Coverbilder und Beschreibungen. Über den Excel-Export-Button lassen sich Buchdaten herunterladen.
 
-Die Anwendung verwendet die echte Google-Books-Anbindung. Für die lokale Nutzung werden eine eigene Datenbank und ein eigener Google-Books-API-Schlüssel eingerichtet.
-
-Vorlage – vor dem Veröffentlichen anpassen: Ersetze GITHUB-NAME/REPOSITORY durch dein Repository. Prüfe, ob die API-Variable im Code tatsächlich GOOGLE_BOOKS_API_KEY heißt. Beschreibe gegebenenfalls die Anmeldung. Entscheide, ob du den vorhandenen Buchbestand als bereinigten SQL-Export mitlieferst. Die folgenden Schritte wurden nicht gegen die Projektdateien ausgeführt.
+Die Anwendung verwendet eine echte Google-Books-Anbindung. Für die Einrichtung werden ein eigener API-Schlüssel und eine lokale DDEV-Umgebung benötigt.
 
 Voraussetzungen
 
-Git oder ein als ZIP heruntergeladenes Repository.
+Git zum Klonen des Repositorys; alternativ ist ein ZIP-Download möglich.
 
 Eine laufende, von DDEV unterstützte Docker-Umgebung.
 
-Installiertes DDEV.
+DDEV.
 
-Internetzugang für Abhängigkeiten und Google Books.
+Internetzugang zum Installieren der Abhängigkeiten und zum Abrufen von Google-Books-Daten und Coverbildern.
 
 Ein eigener API-Schlüssel für die Google Books API.
 
-PHP, Composer und Node.js werden über DDEV verwendet. Die benötigten Versionen und Dienste werden durch .ddev/config.yaml, composer.json und gegebenenfalls package.json festgelegt.
-
-Docker für DDEV einrichten
-
-DDEV installieren
+PHP, Composer und Node.js werden über DDEV ausgeführt. Die Projektkonfiguration und die Abhängigkeitsdateien legen die benötigten Versionen fest.
 
 1. Projekt herunterladen
 
-Ersetze den Repository-Link:
+Ersetze DEIN-GITHUB-NAME durch den GitHub-Benutzernamen des Repository-Inhabers:
 
-git clone https://github.com/GITHUB-NAME/REPOSITORY.git buecherverwaltung
-cd buecherverwaltung
+git clone https://github.com/DEIN-GITHUB-NAME/laravel-buecherverwaltung.git
+cd Bookmanagement
 
-Alternativ auf GitHub Code → Download ZIP wählen, das Archiv entpacken und im Terminal in den entpackten Projektordner wechseln.
+Alternativ auf GitHub Code → Download ZIP wählen, das Archiv entpacken und im Terminal in den Unterordner Bookmanagement wechseln.
 
-Alle folgenden Befehle werden in dem Ordner ausgeführt, in dem artisan und composer.json liegen.
+Alle folgenden Befehle werden im Laravel-Ordner ausgeführt, in dem artisan, composer.json und .ddev liegen. Falls das Repository anders aufgebaut ist, verwende diesen Ordner. Beachte die genaue Groß- und Kleinschreibung.
 
 2. Lokale Konfiguration erstellen
 
-Kopiere bei einer neuen Installation .env.example nach .env. Eine bereits eingerichtete .env nicht überschreiben.
+Kopiere bei der ersten Einrichtung .env.example nach .env.
 
-Linux, macOS oder WSL:
+Linux, macOS, WSL oder Git Bash:
 
 cp .env.example .env
 
@@ -47,18 +41,30 @@ Windows PowerShell:
 
 Copy-Item .env.example .env
 
-Die Datei .env enthält deine lokale Konfiguration und bleibt außerhalb von Git.
+Verwende nur den zu deinem Terminal passenden Kopierbefehl. Eine bereits eingerichtete .env nicht überschreiben.
 
-3. DDEV starten und PHP-Abhängigkeiten installieren
+Die Datei .env enthält die lokale Konfiguration und bleibt außerhalb von Git. In .env.example bleiben APP_KEY und der Google-Books-API-Schlüssel leer.
 
-Docker muss laufen. Verwende die mitgelieferte DDEV-Konfiguration:
+3. DDEV starten und Abhängigkeiten installieren
+
+Starte Docker und verwende die mitgelieferte DDEV-Konfiguration.
+
+Wenn bereits eine andere Kopie dieses Projekts auf demselben Rechner eingerichtet ist: Vergib in der neuen Kopie vor dem ersten Start einen noch nicht verwendeten DDEV-Projektnamen, zum Beispiel:
+
+ddev config --project-name=buecherverwaltung-test
+
+Führe diesen Befehl nur im neuen Projektordner aus. Die Änderung des Projektnamens dient dem lokalen Installationstest und muss nicht ins Repository übernommen werden.
+
+Starte anschließend DDEV und installiere die PHP-Abhängigkeiten:
 
 ddev start
 ddev composer install
 
-composer install installiert die im Repository festgelegten Abhängigkeiten, einschließlich des verwendeten Excel-Pakets. Installiere nicht erneut ein anderes Excel-Paket und verwende für die Ersteinrichtung nicht composer update.
+Die benötigten PHP-Pakete werden aus composer.lock installiert. Ein zusätzliches Installieren eines Excel-Pakets ist für die Einrichtung nicht erforderlich.
 
-Prüfe bei einer MySQL-/MariaDB-Konfiguration in DDEV die Datenbankwerte deiner .env:
+4. Datenbank und Anwendungsschlüssel konfigurieren
+
+Prüfe in .env die Datenbankverbindung für die lokale MySQL-/MariaDB-Datenbank von DDEV:
 
 DB_CONNECTION=mysql
 DB_HOST=db
@@ -67,97 +73,104 @@ DB_DATABASE=db
 DB_USERNAME=db
 DB_PASSWORD=db
 
-Diese Werte sind die üblichen lokalen DDEV-Zugangsdaten. Falls die Projektkonfiguration davon abweicht, gelten die projektspezifischen Werte.
+Das sind die üblichen lokalen DDEV-Zugangsdaten. Behalte die übrigen Einträge aus .env.example bei.
 
-4. Anwendungsschlüssel und Google Books einrichten
-
-Erzeuge bei der neuen Installation einen eigenen Laravel-Anwendungsschlüssel:
+Erzeuge für diese neue Installation einen Laravel-Anwendungsschlüssel:
 
 ddev artisan key:generate
 
-Der APP_KEY ist der Laravel-Anwendungsschlüssel; der Google-Books-API-Schlüssel wird separat eingerichtet.
+Der Befehl trägt APP_KEY automatisch in .env ein. Bei einer bereits eingerichteten Installation muss der Schlüssel nicht erneut erzeugt werden.
 
-Erstelle in deinem Google-Cloud-Projekt einen API-Schlüssel für die aktivierte Books API. Die Einrichtung ist in der Google-Books-Dokumentation beschrieben.
+5. Google Books API einrichten
 
-Trage deinen Schlüssel in .env unter der vom Projekt verwendeten Variable ein. In dieser Vorlage lautet sie:
+Öffne die Google Cloud Console und wähle ein eigenes Projekt oder erstelle eines.
 
-GOOGLE_BOOKS_API_KEY=HIER_DEINEN_EIGENEN_SCHLUESSEL_EINTRAGEN
+Aktiviere für dieses Projekt die Books API.
 
-Der Variablenname muss mit dem bestehenden API-Code bzw. dessen Eintrag in config/services.php übereinstimmen.
+Erstelle unter APIs und Dienste → Anmeldedaten einen API-Schlüssel.
 
-Prüfe außerdem, dass APP_URL die lokale URL der Anwendung enthält. Die URL zeigt:
+Trage deinen eigenen Schlüssel in die lokale .env ein:
+
+GOOGLE_BOOKS_API_KEY=DEIN_EIGENER_API_SCHLUESSEL
+
+Ersetze den Platzhalter durch deinen tatsächlichen Schlüssel. Der hier verwendete Variablenname GOOGLE_BOOKS_API_KEY muss mit dem API-Code beziehungsweise dessen Konfiguration übereinstimmen.
+
+Die Einrichtung ist auch in der Google-Books-Dokumentation beschrieben.
+
+Zeige die lokale Projektadresse an:
 
 ddev describe
 
-Lade anschließend die aktuelle Konfiguration:
+Übernimm die angezeigte Web-URL als APP_URL in .env. Lade danach die geänderte Laravel-Konfiguration:
 
 ddev artisan config:clear
 
-5. Datenbank einrichten
+6. Tabellen erstellen und Buchbestand importieren
 
-Mit vorhandenem Buchbestand
+Die Datei database/books.sql enthält die exportierten Datensätze der Tabelle books, einschließlich gespeicherter Cover-URLs und Beschreibungen. Die Tabellenstruktur wird durch die Laravel-Migrationen erstellt. Der Buchdatenexport enthält keine Benutzerkonten oder Sessions.
 
-Falls das Repository die Datei database/catalog.sql.gz enthält, importiere sie in die neue lokale Projektinstallation:
+Dieser Schritt ist für eine neue Installation vorgesehen. Die Tabelle books muss vor dem Import leer sein.
 
-ddev import-db --file=database/catalog.sql.gz
-ddev artisan migrate
-
-Der Import ersetzt die Datenbank dieses DDEV-Projekts. Führe ihn nur in der neuen Installation oder nach einer passenden Sicherung aus.
-
-Der mitgelieferte Export muss die Tabellenstruktur, den Migrationsstand und den freigegebenen Buchbestand enthalten. Nutzerkonten, Sessions, Tokens und private Inhalte werden nicht als öffentlicher Datenbestand mitgeliefert.
-
-Ohne mitgelieferten Datenbankexport
-
-Erstelle die Tabellen aus den vorhandenen Migrationen:
+Erstelle zuerst die Tabellen:
 
 ddev artisan migrate
 
-Die Datenbank enthält dadurch nicht automatisch den Buchbestand des ursprünglichen Entwicklers. Falls Bücher zum Start benötigt werden, muss der Repository-Autor einen Datenimport oder einen Seeder mit freigegebenen tatsächlichen Buchdaten bereitstellen und dessen Aufruf hier dokumentieren.
+Prüfe anschließend, ob bereits Bücher vorhanden sind:
 
-Der Excel-Export der Anwendung erstellt eine Tabellen-Datei. Er richtet weder das Datenbankschema ein noch importiert er diese Daten zurück in die Anwendung.
+ddev mysql -e "SELECT COUNT(*) AS anzahl_buecher FROM books;"
 
-6. Frontend-Dateien erstellen
+Nur wenn die Anzahl 0 ist, importiere den Buchbestand einmalig:
 
-Falls das Projekt package.json, package-lock.json und ein build-Script verwendet:
+ddev import-db --no-drop --file=database/books.sql
+
+--no-drop verhindert, dass DDEV die Datenbank vor dem Import löscht. Die Option ist hier erforderlich, weil der Export nur Buchdaten enthält und die zuvor erstellten Tabellen benötigt.
+
+Bei einer Anzahl größer als 0 den Import nicht ausführen. Für einen vollständigen Installationstest eine neue Projektkopie mit eigenem DDEV-Namen verwenden. Vorhandene Bücher müssen dafür nicht gelöscht werden.
+
+Die Coverbilder selbst sind nicht in der SQL-Datei enthalten. Gespeichert werden ihre URLs; zum Laden der Bilder ist eine Internetverbindung erforderlich.
+
+7. Frontend erstellen
+
+Falls das Projekt npm mit package.json, package-lock.json und einem build-Script verwendet:
 
 ddev npm ci
 ddev npm run build
 
-Wenn npm verwendet wird, aber noch keine package-lock.json existiert, wird bei der ersten Einrichtung statt ddev npm ci einmal ddev npm install benötigt. Für reproduzierbare Installationen sollte der Repository-Autor die passende Lockdatei mitliefern.
+Wenn npm verwendet wird, aber keine package-lock.json vorhanden ist, verwende statt ddev npm ci den Befehl ddev npm install. Die passende Lockdatei sollte für weitere Installationen im Repository enthalten sein.
 
-Bei einem anderen Paketmanager gelten dessen Lockdatei und Befehle. Wenn die Anwendung kein Frontend-Build benötigt, entfällt dieser Schritt.
+Falls kein Frontend-Build erforderlich ist, entfällt dieser Schritt.
 
-Falls lokale öffentliche Uploads über Laravels Storage-Verzeichnis verwendet werden, erstelle zusätzlich den Link:
+Nur wenn die Anwendung zusätzlich lokale öffentliche Dateien aus storage/app/public verwendet:
 
 ddev artisan storage:link
 
-Für direkt von Google geladene Coverbilder wird dieser Storage-Link nicht benötigt.
+Für Coverbilder, die direkt über Google-Books-URLs geladen werden, wird dieser Link nicht benötigt.
 
-7. Anwendung öffnen
+8. Anwendung öffnen und prüfen
 
 ddev launch
 
-DDEV öffnet die Anwendung im Browser. Die genaue Adresse steht auch in der Ausgabe von ddev describe.
+Prüfe anschließend:
+
+Wird der importierte Buchbestand in der Bücherübersicht angezeigt?
+
+Werden vorhandene Beschreibungen und Coverbilder dargestellt?
+
+Lässt sich über den Excel-Export-Button eine Datei herunterladen?
+
+Werden Titel, Umlaute und ISBNs in der exportierten Datei korrekt dargestellt?
+
+Google Books stellt nicht zu jedem Buch ein Cover oder eine Beschreibung bereit. Bereits gespeicherte Buchdaten sind von neuen API-Abfragen zu unterscheiden; für neue Abfragen wird der eigene API-Schlüssel verwendet.
 
 Anmeldung
 
-Falls die Bücherverwaltung oder der Excel-Export eine Anmeldung erfordern, muss der Repository-Autor hier den tatsächlichen Ablauf ergänzen: beispielsweise die vorhandene Registrierungsseite oder einen projektspezifischen Befehl zur Erstellung eines lokalen Benutzers.
+Der Buchdatenimport legt keine Benutzerkonten an.
 
-Persönliche Zugangsdaten des Entwicklers werden nicht mitgeliefert.
+Vor Veröffentlichung ergänzen, falls eine Anmeldung erforderlich ist: Den tatsächlichen Weg zur Registrierung oder zur Erstellung eines lokalen Benutzerkontos dokumentieren. Persönliche Zugangsdaten werden nicht mitgeliefert. Falls die Anwendung ohne Anmeldung nutzbar ist, kann dieser Hinweis entfernt werden.
 
-8. Funktion prüfen
+Später starten und stoppen
 
-Öffne die Bücherübersicht und prüfe, ob der importierte Buchbestand angezeigt wird.
-
-Öffne ein Buch, zu dem Google Books Cover und Beschreibung bereitstellt.
-
-Klicke auf den vorhandenen Excel-Export-Button.
-
-Öffne die heruntergeladene Datei und prüfe Spalten, Umlaute und ISBNs.
-
-Google Books liefert nicht zu jedem Buch sämtliche Felder. Ein fehlendes Cover bei einem einzelnen Buch bedeutet daher nicht automatisch, dass die gesamte API-Anbindung fehlerhaft ist.
-
-Später erneut starten oder stoppen
+Zum erneuten Starten im Laravel-Projektordner:
 
 ddev start
 ddev launch
@@ -166,52 +179,66 @@ Zum Stoppen:
 
 ddev stop
 
+Der Buchdatenimport gehört zur Ersteinrichtung und wird nicht bei jedem Start wiederholt.
+
 Häufige Probleme
 
 Problem
 
-Prüfung
+Lösung oder Prüfung
 
-DDEV startet nicht
+Duplicate entry '15' for key 'PRIMARY' oder eine andere ID
 
-Docker starten und anschließend ddev start erneut ausführen.
+Diese ID ist bereits vorhanden. Den Import nicht erneut ausführen. Für einen neuen Installationstest eine separate Projektkopie mit eigenem DDEV-Namen einrichten.
 
-Datenbankverbindung schlägt fehl
+database/books.sql fehlt
 
-ddev describe, DB_HOST=db und die übrigen Datenbankwerte prüfen; danach ddev artisan config:clear.
+Prüfen, ob Bookmanagement/database/books.sql im Repository enthalten ist und der Befehl im Laravel-Ordner ausgeführt wird.
 
-Tabellen fehlen
+Tabelle books fehlt
 
-Prüfen, ob der SQL-Import bzw. ddev artisan migrate erfolgreich war.
+Prüfen, ob die Migration für books enthalten ist und ddev artisan migrate erfolgreich war.
+
+Unknown column beim Import
+
+Die Migrationen müssen alle Spalten des Buchdatenexports erstellen, insbesondere auch cover und description.
 
 Bücherübersicht ist leer
 
-Migrationen erstellen Tabellen. Den vorgesehenen Buchbestand zusätzlich importieren.
+Tabellen wurden möglicherweise erstellt, aber die Buchdaten noch nicht importiert. Zuerst die Anzahl der Bücher prüfen.
+
+DDEV startet nicht
+
+Prüfen, ob Docker läuft und der DDEV-Projektname nicht bereits für einen anderen Projektordner verwendet wird.
+
+Datenbankverbindung schlägt fehl
+
+Datenbankwerte in .env prüfen und anschließend ddev artisan config:clear ausführen.
 
 Anwendungsschlüssel fehlt
 
 Bei der neuen Installation ddev artisan key:generate ausführen.
 
-Cover und Beschreibungen fehlen
+Cover oder Beschreibungen fehlen
 
-API-Variablenname, eigenen Schlüssel, aktivierte Books API, Einschränkungen, Kontingent und Internetverbindung prüfen.
+Verfügbarkeit bei Google Books, Internetverbindung, API-Variablenname, eigenen Schlüssel und dessen Berechtigungen prüfen.
 
 Vite-Manifest fehlt
 
-Bei Verwendung von Vite die npm-Abhängigkeiten installieren und ddev npm run build ausführen.
+npm-Abhängigkeiten installieren und ddev npm run build ausführen, sofern das Projekt Vite verwendet.
 
 Excel-Export schlägt fehl
 
-ddev composer install ausführen und die Fehlermeldung in storage/logs/laravel.log prüfen.
+PHP-Abhängigkeiten mit ddev composer install installieren und die konkrete Fehlermeldung in storage/logs/laravel.log prüfen.
 
-Technische Dokumentation
+Dokumentation
 
-Laravel-Konfiguration
-
-Laravel-Migrationen
+Laravel
 
 DDEV für Laravel
 
 DDEV-Datenbankverwaltung
+
+DDEV-Befehle und Importoptionen
 
 Google Books API
